@@ -23,67 +23,77 @@ class DijkstraAlgorithmService
 
   private
 
-  def calculate(matrix, start_node, stop_node)
-    unvisited_nodes = Set[]
-    tentative_distances = []
-    ancestors = []
-
-    setup(matrix, unvisited_nodes, tentative_distances, ancestors)
-
-    tentative_distances[start_node] = 0
+  def calculate(matrix, start_node, stop_node) # rubocop:disable Metrics/MethodLength
+    unvisited_nodes = nodes = setup_nodes(matrix, start_node)
 
     while unvisited_nodes.any?
-      current_node = next_unvisited_node(unvisited_nodes, tentative_distances)
+      current_node = next_unvisited_node(unvisited_nodes)
 
-      unvisited_nodes.delete(current_node)
+      current_node.visited = true
+      unvisited_nodes = nodes.reject(&:visited)
 
-      matrix.row(current_node).each_with_index do |distance, index|
-        next unless unvisited_nodes.include?(index) && distance.positive?
+      matrix.row(current_node.index).to_a.each_with_index do |distance, index|
+        next if update_visited_node(nodes, unvisited_nodes, current_node, distance, index)
 
-        tentative_distance = tentative_distances[current_node] + distance
-
-        if tentative_distance < tentative_distances[index]
-          tentative_distances[index] = tentative_distance
-          ancestors[index] = current_node
-        end
-
-        break if current_node == stop_node || unvisited_nodes.min == INFINITY
+        break if done(unvisited_nodes, current_node, stop_node)
       end
     end
 
-    { distance: tentative_distances[stop_node],
-      path: calculate_path(ancestors, start_node, stop_node) }
+    { distance: nodes[stop_node].tentative_distance, path: calculate_path(nodes, start_node, stop_node) }
   end
 
-  def setup(matrix, unvisited_nodes, tentative_distances, ancestors)
+  def setup_nodes(matrix, start_node)
+    nodes = []
+
     (0..(matrix.row_count - 1)).each do |index|
-      unvisited_nodes.add(index)
-      tentative_distances << INFINITY
-      ancestors << -INFINITY
+      nodes << Node.new(index, false, INFINITY, -INFINITY)
     end
+
+    nodes[start_node].tentative_distance = 0
+
+    nodes
   end
 
-  def next_unvisited_node(unvisited_nodes, tentative_distances)
+  def next_unvisited_node(unvisited_nodes)
     distance = INFINITY
-    node = nil
+    next_unvisited_node = nil
 
-    unvisited_nodes.each do |current_unvisited_node|
-      current_tentative_distance = tentative_distances[current_unvisited_node]
-      if tentative_distances[current_unvisited_node] <= distance
+    unvisited_nodes.each do |current_node|
+      current_tentative_distance = current_node.tentative_distance
+      if current_tentative_distance <= distance
         distance = current_tentative_distance
-        node = current_unvisited_node
+        next_unvisited_node = current_node
       end
     end
 
-    node
+    next_unvisited_node
   end
 
-  def calculate_path(ancestors, start_node, stop_node)
+  def update_visited_node(nodes, unvisited_nodes, current_node, distance, index)
+    return true unless unvisited_nodes.map(&:index).include?(index) && distance.positive?
+
+    visited_node = nodes[index]
+
+    tentative_distance = current_node.tentative_distance + distance
+
+    return false if tentative_distance >= visited_node.tentative_distance
+
+    visited_node.tentative_distance = tentative_distance
+    visited_node.ancestor = current_node.index
+
+    false
+  end
+
+  def done(unvisited_nodes, current_node, stop_node)
+    current_node.index == stop_node || unvisited_nodes.map(&:tentative_distance).min == INFINITY
+  end
+
+  def calculate_path(nodes, start_node, stop_node)
     path = [stop_node]
     node = stop_node
 
-    while ancestors[node] != start_node
-      node = ancestors[node]
+    while nodes[node].ancestor != start_node
+      node = nodes[node].ancestor
       path.prepend(node)
     end
 
