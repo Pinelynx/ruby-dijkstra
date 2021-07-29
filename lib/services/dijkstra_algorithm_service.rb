@@ -14,9 +14,9 @@ class DijkstraAlgorithmService
   INFINITY = Float::INFINITY
 
   def call(data, source_node, destination_node)
-    matrix = check_params(data, source_node, destination_node)
+    check_params(data, source_node, destination_node)
 
-    nodes = calculate_nodes(matrix, source_node, destination_node)
+    nodes = calculate_nodes(data, source_node, destination_node)
 
     { distance: nodes[destination_node].tentative_distance, path: calculate_path(nodes, source_node, destination_node) }
   end
@@ -24,15 +24,15 @@ class DijkstraAlgorithmService
   private
 
   def calculate_nodes(matrix, source_node, destination_node) # rubocop:disable Metrics/MethodLength
-    unvisited_nodes = nodes = setup_nodes(matrix, source_node)
+    nodes = setup_nodes(matrix, source_node)
+    unvisited_nodes = Set.new(nodes)
 
     while unvisited_nodes.any?
       current_node = next_unvisited_node(unvisited_nodes)
 
-      current_node.visited = true
-      unvisited_nodes = nodes.reject(&:visited)
+      unvisited_nodes.delete(current_node)
 
-      matrix.row(current_node.index).to_a.each_with_index do |distance, index|
+      matrix[current_node.index].each_with_index do |distance, index|
         next if update_visited_node(nodes, unvisited_nodes, current_node, distance, index)
 
         break if done(unvisited_nodes, current_node, destination_node)
@@ -45,8 +45,8 @@ class DijkstraAlgorithmService
   def setup_nodes(matrix, source_node)
     nodes = []
 
-    (0..(matrix.row_count - 1)).each do |index|
-      nodes << Node.new(index, false, INFINITY, -INFINITY)
+    matrix.each_with_index do |_row, index|
+      nodes << Node.new(index, INFINITY, -INFINITY)
     end
 
     nodes[source_node].tentative_distance = 0
@@ -115,8 +115,6 @@ class DijkstraAlgorithmService
 
     check_node_parameter(source_node, upper_bound, InvalidSourceNodeError)
     check_node_parameter(destination_node, upper_bound, InvalidDestinationNodeError)
-
-    matrix
   end
 
   def check_node_parameter(node, upper_bound, error)
