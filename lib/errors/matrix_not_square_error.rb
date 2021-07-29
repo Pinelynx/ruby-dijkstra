@@ -1,5 +1,5 @@
 class MatrixNotSquareError < StandardError
   def initialize(message = 'Matrix is not square')
-    super
+    super(message)
   end
 end

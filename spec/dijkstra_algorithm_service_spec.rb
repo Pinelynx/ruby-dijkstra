@@ -1,26 +1,43 @@
-require 'app/services/dijkstra_algorithm_service'
+require 'lib/services/dijkstra_algorithm_service'
 
 RSpec.describe DijkstraAlgorithmService, type: :class do
   subject(:service) { described_class.instance }
 
-  let(:start_node) { 0 }
-  let(:stop_node) { 1 }
+  let(:matrix) { [[0]] }
+  let(:source_node) { 0 }
+  let(:destination_node) { 0 }
 
   describe '#call' do
     context 'when input is invalid' do
       context 'when input matrix is nil' do
         let(:matrix) { nil }
 
-        it 'returns 0' do
-          expect(service.call(matrix, start_node, stop_node)).to eq 0
+        it 'raises EmptyMatrixError' do
+          expect { service.call(matrix, source_node, destination_node) }.to raise_error EmptyMatrixError
         end
       end
 
       context 'when input matrix is empty' do
         let(:matrix) { [] }
 
-        it 'returns 0' do
-          expect(service.call(matrix, start_node, stop_node)).to eq 0
+        it 'raises EmptyMatrixError' do
+          expect { service.call(matrix, source_node, destination_node) }.to raise_error EmptyMatrixError
+        end
+      end
+
+      context 'when input matrix contains nil element' do
+        let(:matrix) { [[1, 2], [nil, 4]] }
+
+        it 'raises EmptyMatrixError' do
+          expect { service.call(matrix, source_node, destination_node) }.to raise_error InvalidMatrixElementError
+        end
+      end
+
+      context 'when input matrix contains negative element' do
+        let(:matrix) { [[1, 2], [-1, 4]] }
+
+        it 'raises EmptyMatrixError' do
+          expect { service.call(matrix, source_node, destination_node) }.to raise_error InvalidMatrixElementError
         end
       end
 
@@ -32,8 +49,60 @@ RSpec.describe DijkstraAlgorithmService, type: :class do
           ]
         end
 
-        it 'returns 0' do
-          expect { service.call(matrix, start_node, stop_node) }.to raise_error MatrixNotSquareError
+        it 'raises MatrixNotSquareError' do
+          expect { service.call(matrix, source_node, destination_node) }.to raise_error MatrixNotSquareError
+        end
+      end
+
+      context 'when source node invalid' do
+        context 'when source node negative' do
+          let(:source_node) { -1 }
+
+          it 'raises InvalidSourceNodeError' do
+            expect { service.call(matrix, source_node, destination_node) }.to raise_error InvalidSourceNodeError
+          end
+        end
+
+        context 'when source node out of bounds' do
+          let(:source_node) { 1 }
+
+          it 'raises InvalidSourceNodeError' do
+            expect { service.call(matrix, source_node, destination_node) }.to raise_error InvalidSourceNodeError
+          end
+        end
+
+        context 'when source node is not integer' do
+          let(:source_node) { 1.1 }
+
+          it 'raises InvalidSourceNodeError' do
+            expect { service.call(matrix, source_node, destination_node) }.to raise_error InvalidSourceNodeError
+          end
+        end
+      end
+
+      context 'when destination node invalid' do
+        context 'when destination node negative' do
+          let(:destination_node) { -1 }
+
+          it 'raises InvalidDestinationNodeError' do
+            expect { service.call(matrix, source_node, destination_node) }.to raise_error InvalidDestinationNodeError
+          end
+        end
+
+        context 'when destination node out of bounds' do
+          let(:destination_node) { 1 }
+
+          it 'raises InvalidDestinationNodeError' do
+            expect { service.call(matrix, source_node, destination_node) }.to raise_error InvalidDestinationNodeError
+          end
+        end
+
+        context 'when destination node is not integer' do
+          let(:destination_node) { 1.1 }
+
+          it 'raises InvalidDestinationNodeError' do
+            expect { service.call(matrix, source_node, destination_node) }.to raise_error InvalidDestinationNodeError
+          end
         end
       end
     end
@@ -50,12 +119,12 @@ RSpec.describe DijkstraAlgorithmService, type: :class do
         ]
       end
 
-      let(:stop_node) { 1 }
+      let(:destination_node) { 1 }
 
       let(:result) { { distance: 8, path: [0, 3, 1] } }
 
       it 'returns expected value' do
-        expect(service.call(matrix, start_node, stop_node)).to eq result
+        expect(service.call(matrix, source_node, destination_node)).to eq result
       end
     end
   end
