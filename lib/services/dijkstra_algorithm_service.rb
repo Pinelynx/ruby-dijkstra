@@ -89,15 +89,17 @@ class DijkstraAlgorithmService
   end
 
   def calculate_path(nodes, source_node, destination_node)
+    return [] if nodes[destination_node].tentative_distance == INFINITY
+
     path = [destination_node]
     node = destination_node
 
-    while nodes[node].ancestor != source_node
+    while nodes[node].ancestor != source_node && nodes[node].ancestor != -INFINITY
       node = nodes[node].ancestor
       path.prepend(node)
     end
 
-    path.prepend(source_node)
+    source_node == destination_node ? path : path.prepend(source_node)
   end
 
   def check_params(data, source_node, destination_node)

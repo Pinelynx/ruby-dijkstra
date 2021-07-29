@@ -108,23 +108,100 @@ RSpec.describe DijkstraAlgorithmService, type: :class do
     end
 
     context 'when input is valid' do
-      let(:matrix) do
-        [
-          [0, 0, 1, 3, 0, 0],
-          [0, 0, 0, 5, 0, 0],
-          [1, 0, 0, 2, 1, 4],
-          [3, 5, 2, 0, 7, 0],
-          [0, 0, 1, 7, 0, 2],
-          [0, 0, 4, 0, 2, 0]
-        ]
+      context 'when only one node' do
+        let(:matrix) { [[0]] }
+        let(:source_node) { 0 }
+        let(:destination_node) { 0 }
+
+        let(:result) { { distance: 0, path: [0] } }
+
+        it 'returns expected value' do
+          expect(service.call(matrix, source_node, destination_node)).to eq result
+        end
       end
 
-      let(:destination_node) { 1 }
+      context 'when all paths are bidirectional' do
+        let(:matrix) do
+          [
+            [0, 0, 1, 3, 0, 0, 4, 0],
+            [0, 0, 0, 5, 0, 0, 7, 0],
+            [1, 0, 0, 2, 1, 4, 0, 0],
+            [3, 5, 2, 0, 7, 0, 0, 10],
+            [0, 0, 1, 7, 0, 2, 0, 0],
+            [0, 0, 4, 0, 2, 0, 0, 6],
+            [4, 7, 0, 0, 0, 0, 0, 7],
+            [0, 0, 0, 10, 0, 6, 7, 0]
+          ]
+        end
+        let(:source_node) { 0 }
+        let(:destination_node) { 7 }
 
-      let(:result) { { distance: 8, path: [0, 3, 1] } }
+        let(:outbound_result) { { distance: 10, path: [0, 2, 4, 5, 7] } }
+        let(:inbound_result) { { distance: 10, path: [7, 5, 4, 2, 0] } }
 
-      it 'returns expected value' do
-        expect(service.call(matrix, source_node, destination_node)).to eq result
+        it 'returns expected outbound value' do
+          expect(service.call(matrix, source_node, destination_node)).to eq outbound_result
+        end
+
+        it 'returns expected inbound value' do
+          expect(service.call(matrix, destination_node, source_node)).to eq inbound_result
+        end
+      end
+
+      context 'when some paths are bidirectional' do
+        let(:matrix) do
+          [
+            [0, 0, 1, 3, 0, 0, 4, 0],
+            [0, 0, 0, 5, 0, 0, 7, 0],
+            [0, 0, 0, 2, 1, 4, 0, 0],
+            [3, 5, 2, 0, 7, 0, 0, 0],
+            [0, 0, 0, 7, 0, 2, 0, 0],
+            [0, 0, 4, 0, 2, 0, 0, 6],
+            [0, 7, 0, 0, 0, 0, 0, 7],
+            [0, 0, 0, 10, 0, 6, 7, 0]
+          ]
+        end
+        let(:source_node) { 0 }
+        let(:destination_node) { 7 }
+
+        let(:outbound_result) { { distance: 10, path: [0, 2, 4, 5, 7] } }
+        let(:inbound_result) { { distance: 13, path: [7, 3, 0] } }
+
+        it 'returns expected outbound value' do
+          expect(service.call(matrix, source_node, destination_node)).to eq outbound_result
+        end
+
+        it 'returns expected inbound value' do
+          expect(service.call(matrix, destination_node, source_node)).to eq inbound_result
+        end
+      end
+
+      context 'when no existing return path' do
+        let(:matrix) do
+          [
+            [0, 0, 1, 3, 0, 0, 4, 0],
+            [0, 0, 0, 5, 0, 0, 7, 0],
+            [0, 0, 0, 2, 1, 4, 0, 0],
+            [0, 5, 2, 0, 7, 0, 0, 0],
+            [0, 0, 0, 7, 0, 2, 0, 0],
+            [0, 0, 4, 0, 2, 0, 0, 6],
+            [0, 7, 0, 0, 0, 0, 0, 7],
+            [0, 0, 0, 10, 0, 6, 7, 0]
+          ]
+        end
+        let(:source_node) { 0 }
+        let(:destination_node) { 7 }
+
+        let(:outbound_result) { { distance: 10, path: [0, 2, 4, 5, 7] } }
+        let(:inbound_result) { { distance: Float::INFINITY, path: [] } }
+
+        it 'returns expected outbound value' do
+          expect(service.call(matrix, source_node, destination_node)).to eq outbound_result
+        end
+
+        it 'returns expected inbound value' do
+          expect(service.call(matrix, destination_node, source_node)).to eq inbound_result
+        end
       end
     end
   end
